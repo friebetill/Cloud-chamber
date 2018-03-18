@@ -18,6 +18,18 @@ def is_zero_file(fpath):
     '''Checks if a file does not exist or is empty.'''
     return not(os.path.isfile(fpath) and os.path.getsize(fpath) > 0)
 
+def time_dec(func):
+    def wrapper(*arg):
+        print(func.__name__,':', arg[0], end='', flush=True)
+        start = time.time()
+
+        res = func(*arg)
+
+        print(' -> %.1fs' % (time.time() - start))
+        return res
+
+    return wrapper
+
 def plot_result_images(images):
     def plot_result_image(image, lines_unfiltered, lines_filtered):
         file, ending = os.path.splitext(image)
@@ -63,10 +75,8 @@ def plot_result_images(images):
 
 # Install pyfftw for better performance.
 def align_images(images):
+    @time_dec
     def align_image(path_analyse, img_background):
-        print('Image alignment:', path_analyse, end='', flush=True)
-        start = time.time()
-
         # Load analyse image
         img_analyse = imageio.imread(path_analyse, pilmode='L')
 
@@ -77,8 +87,6 @@ def align_images(images):
         #img_analyse_aligned = ird.similarity(img_background, img_analyse, numiter=3)['timg']
         img_analyse_aligned = img_analyse # TODO: Remove, fast variant for testing
 
-        end = time.time()
-        print(', %.1fs' % (end - start))
         return img_analyse_aligned
 
     # Start here
@@ -96,17 +104,15 @@ def align_images(images):
     #     p.map(align_image, images)
 
 def remove_backgrounds(images):
-    def remove_background(img_analyse, img_background):
-        print('Background removal:', path_analyse, end='', flush=True)
-        start = time.time()
+    @time_dec
+    def remove_background(path_analyse, img_background):
+        img_analyse = imageio.imread(path_analyse, format='JPEG-PIL', pilmode='L')
 
         # Convert images to int16 to allow negative values so that the negative values (background) can be filtered.
         img_analyse = np.int16(img_analyse) - np.int16(img_background) * 2
         for x, y in zip(np.where(img_analyse < 5)[0], np.where(img_analyse < 5)[1]):
             img_analyse[x, y] = 0
 
-        end = time.time()
-        print(', %.1fs' % (end - start))
         return np.uint8(img_analyse)
 
     images = {x.replace('.', '_align.') for x in images}
@@ -115,17 +121,14 @@ def remove_backgrounds(images):
     # ‘L’ (8-bit pixels, black and white)
 
     for path_analyse in images:
-        img_analyse = imageio.imread(path_analyse, format='JPEG-PIL', pilmode='L')
-        img_analyse_wo_bkgnd = remove_background(img_analyse, img_background)
+        img_analyse_wo_bkgnd = remove_background(path_analyse, img_background)
 
         file, ending = os.path.splitext(path_analyse)
         imageio.imsave(file[:-6] + '_wo_bkgnd' + ending, img_analyse_wo_bkgnd, format='jpg')
 
 def detect_lines(images):
+    @time_dec
     def detect_line(path_analyse, img_analyse):
-        print('Line detection:', path_analyse, end='', flush=True)
-        start = time.time()
-
         # Followed code example on https://stackoverflow.com/questions/39752235/python-how-to-detect-vertical-and-horizontal-lines-in-an-image-with-houghlines-w
         # Canny makes edges visible in the image
         edges = cv2.Canny(image=img_analyse, threshold1=20, threshold2=40)
@@ -137,8 +140,6 @@ def detect_lines(images):
 
         lines = lines.reshape(len(lines), 4).tolist()
 
-        end = time.time()
-        print(', %.1fs' % (end - start))
         return util.createLinesWithClass(lines, path_analyse.replace('_wo_bkgnd', ''))
 
     # Start here
