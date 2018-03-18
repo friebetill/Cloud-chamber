@@ -31,6 +31,7 @@ def time_dec(func):
     return wrapper
 
 def plot_result_images(images):
+    @time_dec
     def plot_result_image(image, lines_unfiltered, lines_filtered):
         file, ending = os.path.splitext(image)
 
@@ -52,7 +53,6 @@ def plot_result_images(images):
         axes[1][1].set_title('Detected ' + lines_filtered + ' lines after filtering')
         axes[1][1].axis('off')
 
-        print('.', end='', flush=True)
         file, ending = os.path.splitext(image)
         plt.savefig(
             file + '_result' + ending,
@@ -163,6 +163,18 @@ def detect_lines(images):
 
 
 def filter_lines(images):
+    @time_dec
+    def filter_line(filename, df_unfiltered):
+        df_filename = df_unfiltered[df_unfiltered.filename == filename]
+
+        lines_filename = []
+        for _, data in df_filename.iterrows():
+            lines_filename.append(util.Line(int(data.p1_x), int(data.p1_y), int(data.p2_x), int(data.p2_y), data.filename))
+
+        lines_filtered = util.filterLines(lines_filename) # Maybe work directly in the dataframe from panda
+
+        return lines_filtered
+
     if is_zero_file('lines_unfiltered.csv'):
         print('The file lines_unfiltered.csv is empty. \nCall only_filter after only_detect.')
         return
@@ -175,20 +187,8 @@ def filter_lines(images):
     filenames = set(df_unfiltered.filename)
 
     for filename in filenames:
-        print('Line filtering:', filename, end='', flush=True)
-        start = time.time()
-
-        df_filename = df_unfiltered[df_unfiltered.filename == filename]
-
-        lines_filename = []
-        for _, data in df_filename.iterrows():
-            lines_filename.append(util.Line(int(data.p1_x), int(data.p1_y), int(data.p2_x), int(data.p2_y), data.filename))
-
-        lines_filtered = util.filterLines(lines_filename) # Maybe work directly in the dataframe from panda
-
+        lines_filtered = filter_line(filename, df_unfiltered)
         util.linesToDataFrame(lines_filtered).to_csv('lines_filtered.csv', mode='a', header=False, index=False)
-        end = time.time()
-        print(', %.1fs' % (end - start))
 
         file, ending = os.path.splitext(filename)
         img_analyse = imageio.imread(file + '_wo_bkgnd' + ending, pilmode='L')
