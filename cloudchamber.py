@@ -147,7 +147,7 @@ def detect_lines(images):
 
     if is_zero_file('lines_unfiltered.csv'):
         with open('lines_unfiltered.csv', 'a') as file_results:
-            file_results.write('angle,filename,length,p1_x,p1_y,p2_x,p2_y\n')
+            file_results.write('filename,angle,length,p1_x,p1_y,p2_x,p2_y\n')
 
     already_analysed = list(set(pandas.read_csv('lines_unfiltered.csv').filename))
     images_wo_duplicates = [x for x in images if x not in already_analysed]
@@ -180,7 +180,7 @@ def filter_lines(images):
         return
 
     with open('lines_filtered.csv', 'w') as file_results:
-        file_results.write('angle,filename,length,p1_x,p1_y,p2_x,p2_y\n')
+        file_results.write('filename,angle,length,p1_x,p1_y,p2_x,p2_y\n')
 
     df_unfiltered = pandas.read_csv('lines_unfiltered.csv')
 
