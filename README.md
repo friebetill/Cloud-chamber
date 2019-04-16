@@ -12,6 +12,13 @@ The program only accepts images and processes them in the following steps.
 ![Results](/example_data/Nebelkammer_000_result.jpg?raw=true)
 
 ## How do I use it?
+Install Python (a programming language) to run the program. How to install Python can be found here: [WikiHow](https://de.wikihow.com/Python-installieren)
+
+Install required libraries
+```
+pip install numpy matplotlib opencv-python imreg_dft imageio pandas argparse
+```
+
 To execute the complete program:
 ```bash
 python cloudchamber example_data/*
